@@ -13,7 +13,6 @@ function Invoke-CIPPStandardMailContacts {
         CAT
             Global Standards
         TAG
-            "lowimpact"
         ADDEDCOMPONENT
             {"type":"textField","name":"standards.MailContacts.GeneralContact","label":"General Contact","required":false}
             {"type":"textField","name":"standards.MailContacts.SecurityContact","label":"Security Contact","required":false}
@@ -21,6 +20,8 @@ function Invoke-CIPPStandardMailContacts {
             {"type":"textField","name":"standards.MailContacts.TechContact","label":"Technical Contact","required":false}
         IMPACT
             Low Impact
+        ADDEDDATE
+            2022-03-13
         POWERSHELLEQUIVALENT
             Set-MsolCompanyContactInformation
         RECOMMENDEDBY
@@ -69,22 +70,26 @@ function Invoke-CIPPStandardMailContacts {
         if ($CurrentInfo.marketingNotificationEmails -eq $Contacts.MarketingContact) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "Marketing contact email is set to $($Contacts.MarketingContact)" -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "Marketing contact email is not set to $($Contacts.MarketingContact)" -sev Alert
+            Write-StandardsAlert -message "Marketing contact email is not set to $($Contacts.MarketingContact)" -object $CurrentInfo -tenant $tenant -standardName 'MailContacts' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "Marketing contact email is not set to $($Contacts.MarketingContact)" -sev Info
         }
         if ($CurrentInfo.securityComplianceNotificationMails -eq $Contacts.SecurityContact) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "Security contact email is set to $($Contacts.SecurityContact)" -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "Security contact email is not set to $($Contacts.SecurityContact)" -sev Alert
+            Write-StandardsAlert -message "Security contact email is not set to $($Contacts.SecurityContact)" -object $CurrentInfo -tenant $tenant -standardName 'MailContacts' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "Security contact email is not set to $($Contacts.SecurityContact)" -sev Info
         }
         if ($CurrentInfo.technicalNotificationMails -eq $Contacts.TechContact) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "Technical contact email is set to $($Contacts.TechContact)" -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "Technical contact email is not set to $($Contacts.TechContact)" -sev Alert
+            Write-StandardsAlert -message "Technical contact email is not set to $($Contacts.TechContact)" -object $CurrentInfo -tenant $tenant -standardName 'MailContacts' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "Technical contact email is not set to $($Contacts.TechContact)" -sev Info
         }
         if ($CurrentInfo.privacyProfile.contactEmail -eq $Contacts.GeneralContact) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "General contact email is set to $($Contacts.GeneralContact)" -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "General contact email is not set to $($Contacts.GeneralContact)" -sev Alert
+            Write-StandardsAlert -message "General contact email is not set to $($Contacts.GeneralContact)" -object $CurrentInfo -tenant $tenant -standardName 'MailContacts' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "General contact email is not set to $($Contacts.GeneralContact)" -sev Info
         }
 
     }

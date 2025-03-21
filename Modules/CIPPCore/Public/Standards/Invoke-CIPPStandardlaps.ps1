@@ -13,13 +13,15 @@ function Invoke-CIPPStandardlaps {
         CAT
             Entra (AAD) Standards
         TAG
-            "lowimpact"
         ADDEDCOMPONENT
         IMPACT
             Low Impact
+        ADDEDDATE
+            2023-04-25
         POWERSHELLEQUIVALENT
             Portal or Graph API
         RECOMMENDEDBY
+            "CIPP"
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
@@ -53,7 +55,8 @@ function Invoke-CIPPStandardlaps {
         if ($PreviousSetting.localAdminPassword.isEnabled) {
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'LAPS is enabled.' -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $Tenant -message 'LAPS is not enabled.' -sev Alert
+            Write-StandardsAlert -message "LAPS is not enabled" -object $PreviousSetting -tenant $Tenant -standardName 'laps' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $Tenant -message 'LAPS is not enabled.' -sev Info
         }
     }
 

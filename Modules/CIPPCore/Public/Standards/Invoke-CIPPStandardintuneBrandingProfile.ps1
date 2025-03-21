@@ -13,7 +13,6 @@ function Invoke-CIPPStandardintuneBrandingProfile {
         CAT
             Intune Standards
         TAG
-            "lowimpact"
         ADDEDCOMPONENT
             {"type":"textField","name":"standards.intuneBrandingProfile.displayName","label":"Organization name","required":false}
             {"type":"switch","name":"standards.intuneBrandingProfile.showLogo","label":"Show logo"}
@@ -27,6 +26,8 @@ function Invoke-CIPPStandardintuneBrandingProfile {
             {"type":"textField","name":"standards.intuneBrandingProfile.privacyUrl","label":"Privacy statement URL","required":false}
         IMPACT
             Low Impact
+        ADDEDDATE
+            2024-06-20
         POWERSHELLEQUIVALENT
             Graph API
         RECOMMENDEDBY
@@ -91,7 +92,8 @@ function Invoke-CIPPStandardintuneBrandingProfile {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Intune Branding Profile is correctly configured' -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message 'Intune Branding Profile is not correctly configured' -sev Alert
+            Write-StandardsAlert -message "Intune Branding Profile is not correctly configured" -object $CurrentState -tenant $tenant -standardName 'intuneBrandingProfile' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message 'Intune Branding Profile is not correctly configured' -sev Info
         }
     }
 

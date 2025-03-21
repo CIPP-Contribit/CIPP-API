@@ -13,15 +13,17 @@ function Invoke-CIPPStandardDisableSharedMailbox {
         CAT
             Exchange Standards
         TAG
-            "mediumimpact"
             "CIS"
         ADDEDCOMPONENT
         IMPACT
             Medium Impact
+        ADDEDDATE
+            2021-11-16
         POWERSHELLEQUIVALENT
             Get-Mailbox & Update-MgUser
         RECOMMENDEDBY
             "CIS"
+            "CIPP"
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
@@ -54,13 +56,16 @@ function Invoke-CIPPStandardDisableSharedMailbox {
     if ($Settings.alert -eq $true) {
 
         if ($SharedMailboxList) {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "Shared mailboxes with enabled accounts: $($SharedMailboxList.Count)" -sev Alert
+            Write-StandardsAlert -message "Shared mailboxes with enabled accounts: $($SharedMailboxList.Count)" -object $SharedMailboxList -tenant $tenant -standardName 'DisableSharedMailbox' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "Shared mailboxes with enabled accounts: $($SharedMailboxList.Count)" -sev Info
         } else {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'All AAD accounts for shared mailboxes are disabled.' -sev Info
         }
     }
 
     if ($Settings.report -eq $true) {
+        $state = $SharedMailboxList ? $SharedMailboxList : $true
+        Set-CIPPStandardsCompareField -FieldName 'standards.DisableSharedMailbox' -FieldValue $state -Tenant $tenant
         Add-CIPPBPAField -FieldName 'DisableSharedMailbox' -FieldValue $SharedMailboxList -StoreAs json -Tenant $tenant
     }
 }

@@ -13,9 +13,10 @@ function Invoke-CIPPStandardintuneRequireMFA {
         CAT
             Intune Standards
         TAG
-            "mediumimpact"
         IMPACT
             Medium Impact
+        ADDEDDATE
+            2023-10-23
         POWERSHELLEQUIVALENT
             Update-MgBetaPolicyDeviceRegistrationPolicy
         RECOMMENDEDBY
@@ -52,7 +53,8 @@ function Invoke-CIPPStandardintuneRequireMFA {
         if ($PreviousSetting.multiFactorAuthConfiguration -eq 'required') {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Require to use MFA when joining/registering Entra Devices is enabled.' -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message 'Require to use MFA when joining/registering Entra Devices is not enabled.' -sev Alert
+            Write-StandardsAlert -message "Require to use MFA when joining/registering Entra Devices is not enabled" -object $PreviousSetting -tenant $tenant -standardName 'intuneRequireMFA' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message 'Require to use MFA when joining/registering Entra Devices is not enabled.' -sev Info
         }
     }
 

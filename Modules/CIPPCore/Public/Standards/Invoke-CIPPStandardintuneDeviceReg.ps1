@@ -7,17 +7,18 @@ function Invoke-CIPPStandardintuneDeviceReg {
     .SYNOPSIS
         (Label) Set Maximum Number of Devices per user
     .DESCRIPTION
-        (Helptext) sets the maximum number of devices that can be registered by a user. A value of 0 disables device registration by users
-        (DocsDescription) sets the maximum number of devices that can be registered by a user. A value of 0 disables device registration by users
+        (Helptext) Sets the maximum number of devices that can be registered by a user. A value of 0 disables device registration by users
+        (DocsDescription) Sets the maximum number of devices that can be registered by a user. A value of 0 disables device registration by users
     .NOTES
         CAT
             Intune Standards
         TAG
-            "mediumimpact"
         ADDEDCOMPONENT
-            {"type":"number","name":"standards.intuneDeviceReg.max","label":"Maximum devices (Enter 2147483647 for unlimited.)"}
+            {"type":"number","name":"standards.intuneDeviceReg.max","label":"Maximum devices (Enter 2147483647 for unlimited.)","required":true}
         IMPACT
             Medium Impact
+        ADDEDDATE
+            2023-03-27
         POWERSHELLEQUIVALENT
             Update-MgBetaPolicyDeviceRegistrationPolicy
         RECOMMENDEDBY
@@ -55,7 +56,8 @@ function Invoke-CIPPStandardintuneDeviceReg {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "User device quota is set to $($Settings.max)" -sev Info
         } else {
-            Write-LogMessage -API 'Standards' -tenant $tenant -message "User device quota is not set to $($Settings.max)" -sev Alert
+            Write-StandardsAlert -message "User device quota is not set to $($Settings.max)" -object $PreviousSetting -tenant $tenant -standardName 'intuneDeviceReg' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $tenant -message "User device quota is not set to $($Settings.max)" -sev Info
         }
     }
 

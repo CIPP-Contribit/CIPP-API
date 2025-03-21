@@ -13,10 +13,11 @@ function Invoke-CIPPStandardEnableOnlineArchiving {
         CAT
             Exchange Standards
         TAG
-            "lowimpact"
         ADDEDCOMPONENT
         IMPACT
             Low Impact
+        ADDEDDATE
+            2024-01-20
         POWERSHELLEQUIVALENT
             Enable-Mailbox -Archive \$true
         RECOMMENDEDBY
@@ -69,7 +70,8 @@ function Invoke-CIPPStandardEnableOnlineArchiving {
     if ($Settings.alert -eq $true) {
 
         if ($MailboxesNoArchive) {
-            Write-LogMessage -API 'Standards' -tenant $Tenant -message "Mailboxes without Online Archiving: $($MailboxesNoArchive.Count)" -sev Alert
+            Write-StandardsAlert -message "Mailboxes without Online Archiving: $($MailboxesNoArchive.Count)" -object $MailboxesNoArchive -tenant $Tenant -standardName 'EnableOnlineArchiving' -standardId $Settings.standardId
+            Write-LogMessage -API 'Standards' -tenant $Tenant -message "Mailboxes without Online Archiving: $($MailboxesNoArchive.Count)" -sev Info
         } else {
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'All mailboxes have Online Archiving enabled' -sev Info
         }
