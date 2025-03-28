@@ -37,7 +37,6 @@ function Invoke-CIPPStandardIntuneTemplate {
     $Request = @{body = $null }
 
     $CompareList = foreach ($Template in $Settings) {
-        Write-Host "working on template: $($Template | ConvertTo-Json)"
         $Request.body = (Get-CIPPAzDataTableEntity @Table -Filter $Filter | Where-Object -Property RowKey -Like "$($Template.TemplateList.value)*").JSON | ConvertFrom-Json -ErrorAction SilentlyContinue
         if ($Request.body -eq $null) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message "Failed to find template $($Template.TemplateList.value). Has this Intune Template been deleted?" -sev 'Error'
@@ -65,31 +64,32 @@ function Invoke-CIPPStandardIntuneTemplate {
                 excludeGroup     = $Template.excludeGroup
                 remediate        = $Template.remediate
                 existingPolicyId = $ExistingPolicy.id
+                templateId       = $Template.TemplateList.value
             }
         } else {
             [PSCustomObject]@{
                 MatchFailed      = $false
                 displayname      = $displayname
                 description      = $description
-                compare          = $Compare
+                compare          = $false
                 rawJSON          = $RawJSON
                 body             = $Request.body
                 assignTo         = $Template.AssignTo
                 excludeGroup     = $Template.excludeGroup
                 remediate        = $Template.remediate
                 existingPolicyId = $ExistingPolicy.id
-
+                templateId       = $Template.TemplateList.value
             }
         }
     }
 
-    If ($Settings.remediate -eq $true) {
+    If ($true -in $Settings.remediate) {
         Write-Host 'starting template deploy'
-        foreach ($Template in $CompareList | Where-Object -Property remediate -EQ $true) {
-            Write-Host "working on template deploy: $($Template | ConvertTo-Json)"
+        foreach ($TemplateFile in $CompareList | Where-Object -Property remediate -EQ $true) {
+            Write-Host "working on template deploy: $($Template.displayname)"
             try {
-                $Template.customGroup ? ($Template.AssignTo = $Template.customGroup) : $null
-                Set-CIPPIntunePolicy -TemplateType $Template.body.Type -Description $description -DisplayName $displayname -RawJSON $RawJSON -AssignTo $Template.AssignTo -ExcludeGroup $Template.excludeGroup -tenantFilter $Tenant
+                $TemplateFile.customGroup ? ($TemplateFile.AssignTo = $TemplateFile.customGroup) : $null
+                Set-CIPPIntunePolicy -TemplateType $TemplateFile.body.Type -Description $TemplateFile.description -DisplayName $TemplateFile.displayname -RawJSON $templateFile.rawJSON -AssignTo $TemplateFile.AssignTo -ExcludeGroup $TemplateFile.excludeGroup -tenantFilter $Tenant
             } catch {
                 $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
                 Write-LogMessage -API 'Standards' -tenant $tenant -message "Failed to create or update Intune Template $PolicyName, Error: $ErrorMessage" -sev 'Error'
@@ -116,7 +116,12 @@ function Invoke-CIPPStandardIntuneTemplate {
     }
 
     if ($Settings.report) {
-        #think about how to store this. Consideration: standards are stored seperately from BPA so they can be stored in the same format as the input.
-        Add-CIPPBPAField -FieldName "policy-$displayname" -FieldValue $Compare -StoreAs bool -Tenant $tenant
+        foreach ($Template in $CompareList) {
+            $id = $Template.templateId
+            $CompareObj = $Template.compare
+            $state = $CompareObj ? $CompareObj : $true
+            Set-CIPPStandardsCompareField -FieldName "standards.IntuneTemplate.$id" -FieldValue $state -TenantFilter $Tenant
+        }
+        Add-CIPPBPAField -FieldName "policy-$id" -FieldValue $Compare -StoreAs bool -Tenant $tenant
     }
 }

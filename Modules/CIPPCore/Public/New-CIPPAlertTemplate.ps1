@@ -21,7 +21,20 @@ function New-CIPPAlertTemplate {
     $RuleTable = ''
     $Table = ''
     $LocationInfo = $LocationInfo ?? $Data.CIPPLocationInfo | ConvertFrom-Json -ErrorAction SilentlyContinue | Select-Object * -ExcludeProperty Etag, PartitionKey, TimeStamp
+    if ($Data -is [string]) {
+        $Data = @{ message = $Data }
+    }
+    if ($Data -is [array] -and $Data[0] -is [string]) {
+        $Data = $Data | ForEach-Object { @{ message = $_ } }
+    }
+
+    if ($InputObject -eq 'sherwebmig') {
+        $DataHTML = ($Data | ConvertTo-Html | Out-String).Replace('<table>', ' <table class="table-modern">')
+        $IntroText = "<p>The following licenses have not yet been found at Sherweb, and are expiring within 7 days:</p>$dataHTML"
+    }
     if ($InputObject -eq 'table') {
+        #data can be a array of strings or a string, if it is, we need to convert it to an object so it shows up nicely, that object will have one header: message.
+
         $DataHTML = ($Data | Select-Object * -ExcludeProperty Etag, PartitionKey, TimeStamp | ConvertTo-Html | Out-String).Replace('<table>', ' <table class="table-modern">')
         $IntroText = "<p>You've configured CIPP to send you alerts based on the logbook. The following alerts match your configured rules</p>$dataHTML"
         $ButtonUrl = "$CIPPURL/cipp/logs"
@@ -29,15 +42,14 @@ function New-CIPPAlertTemplate {
     }
     if ($InputObject -eq 'standards') {
         $DataHTML = foreach ($object in $data) {
-            "<p>For the standard $($object.standardName) in template {{Template Name }} we've detected the following:</p> <li>$($object.message)</li>"
+            "<p>For the standard $($object.standardName) we've detected the following:</p> <li>$($object.message)</li>"
             if ($object.object) {
                 $StandardObject = $object.object | ConvertFrom-Json
-                $StandardObject = $newobject | Select-Object * -ExcludeProperty Etag, PartitionKey, TimeStamp
+                $StandardObject = $StandardObject | Select-Object * -ExcludeProperty Etag, PartitionKey, TimeStamp
                 if ($StandardObject.compare) {
                     '<p>The following differences have been detected:</p>'
                     ($StandardObject.compare | ConvertTo-Html -Fragment | Out-String).Replace('<table>', ' <table class="table-modern">')
                 } else {
-                    '<p>This is a table representation of the current settings:</p>'
                     ($StandardObject | ConvertTo-Html -Fragment -As List | Out-String).Replace('<table>', ' <table class="table-modern">')
                 }
             }
