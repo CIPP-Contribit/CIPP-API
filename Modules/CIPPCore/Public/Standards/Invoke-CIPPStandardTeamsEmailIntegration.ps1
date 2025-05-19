@@ -22,7 +22,7 @@ Function Invoke-CIPPStandardTeamsEmailIntegration {
         POWERSHELLEQUIVALENT
             Set-CsTeamsClientConfiguration -AllowEmailIntoChannel \$false
         RECOMMENDEDBY
-            "CIS 3.0"
+            "CIS"
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
@@ -42,13 +42,13 @@ Function Invoke-CIPPStandardTeamsEmailIntegration {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Teams Email Integration settings already set.' -sev Info
         } else {
-            $cmdparams = @{
+            $cmdParams = @{
                 Identity              = 'Global'
                 AllowEmailIntoChannel = $Settings.AllowEmailIntoChannel
             }
 
             try {
-                New-TeamsRequest -TenantFilter $Tenant -Cmdlet 'Set-CsTeamsClientConfiguration' -CmdParams $cmdparams
+                New-TeamsRequest -TenantFilter $Tenant -Cmdlet 'Set-CsTeamsClientConfiguration' -CmdParams $cmdParams
                 Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Updated Teams Email Integration settings' -sev Info
             } catch {
                 $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
@@ -61,19 +61,20 @@ Function Invoke-CIPPStandardTeamsEmailIntegration {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Teams Email Integration settings is set correctly.' -sev Info
         } else {
-            Write-StandardsAlert -message "Teams Email Integration settings is not set correctly." -object $CurrentState -tenant $Tenant -standardName 'TeamsEmailIntegration' -standardId $Settings.standardId
+            Write-StandardsAlert -message 'Teams Email Integration settings is not set correctly.' -object $CurrentState -tenant $Tenant -standardName 'TeamsEmailIntegration' -standardId $Settings.standardId
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Teams Email Integration settings is not set correctly.' -sev Info
         }
     }
 
-    if ($Setings.report -eq $true) {
-        Add-CIPPBPAField -FieldName 'TeamsEmailIntoChannel' -FieldValue $StateIsCorrect -StoreAs bool -Tenant $Tenant
+    if ($Settings.report -eq $true) {
 
         if ($StateIsCorrect) {
             $FieldValue = $true
         } else {
             $FieldValue = $CurrentState
         }
-        Set-CIPPStandardsCompareField -FieldName 'standards.TeamsEmailIntoChannel' -FieldValue $FieldValue -Tenant $Tenant
+        Set-CIPPStandardsCompareField -FieldName 'standards.TeamsEmailIntegration' -FieldValue $FieldValue -Tenant $Tenant
+        Add-CIPPBPAField -FieldName 'TeamsEmailIntoChannel' -FieldValue $StateIsCorrect -StoreAs bool -Tenant $Tenant
+
     }
 }

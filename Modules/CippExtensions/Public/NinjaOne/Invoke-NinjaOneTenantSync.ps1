@@ -1523,12 +1523,12 @@ function Invoke-NinjaOneTenantSync {
             $ManagementLinksData = @(
                 @{
                     Name = 'M365 Admin Portal'
-                    Link = "https://portal.office.com/Partner/BeginClientSession.aspx?CTID=$($customer.customerId)&CSDEST=o365admincenter"
+                    Link = "https://admin.cloud.microsoft/?delegatedOrg=$($customer.defaultDomainName)"
                     Icon = 'fas fa-cogs'
                 },
                 @{
                     Name = 'Exchange Portal'
-                    Link = "https://admin.exchange.microsoft.com/?landingpage=homepage&form=mac_sidebar&delegatedOrg=$($Customer.defaultDomainName)#"
+                    Link = "https://admin.cloud.microsoft/exchange?delegatedOrg=$($Customer.defaultDomainName)"
                     Icon = 'fas fa-mail-bulk'
                 },
                 @{
@@ -1538,7 +1538,7 @@ function Invoke-NinjaOneTenantSync {
                 },
                 @{
                     Name = 'Intune Portal'
-                    Link = "https://endpoint.microsoft.com/$($customer.defaultDomainName)/"
+                    Link = "https://intune.microsoft.com/$($customer.defaultDomainName)/"
                     Icon = 'fas fa-laptop'
                 },
                 @{
@@ -2141,4 +2141,5 @@ function Invoke-NinjaOneTenantSync {
         $CurrentItem | Add-Member -NotePropertyName lastStatus -NotePropertyValue 'Failed' -Force
         Add-CIPPAzDataTableEntity @MappingTable -Entity $CurrentItem -Force
     }
+    return $true
 }

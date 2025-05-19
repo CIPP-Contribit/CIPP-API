@@ -23,7 +23,7 @@ function Invoke-CIPPStandardSPExternalUserExpiration {
         POWERSHELLEQUIVALENT
             Set-SPOTenant -ExternalUserExpireInDays 30 -ExternalUserExpirationRequired \$True
         RECOMMENDEDBY
-            "CIS 3.0"
+            "CIS"
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
@@ -33,7 +33,7 @@ function Invoke-CIPPStandardSPExternalUserExpiration {
     param($Tenant, $Settings)
 
     $CurrentState = Get-CIPPSPOTenant -TenantFilter $Tenant |
-        Select-Object -Property ExternalUserExpireInDays, ExternalUserExpirationRequired
+    Select-Object -Property ExternalUserExpireInDays, ExternalUserExpirationRequired
 
     $StateIsCorrect = ($CurrentState.ExternalUserExpireInDays -eq $Settings.Days) -and
     ($CurrentState.ExternalUserExpirationRequired -eq $true)
@@ -72,6 +72,7 @@ function Invoke-CIPPStandardSPExternalUserExpiration {
         } else {
             $FieldValue = $CurrentState
         }
+        Set-CIPPStandardsCompareField -FieldName 'standards.SPExternalUserExpiration' -FieldValue $FieldValue -TenantFilter $Tenant
         Add-CIPPBPAField -FieldName 'standards.SPExternalUserExpiration' -FieldValue $FieldValue -StoreAs bool -Tenant $Tenant
     }
 }

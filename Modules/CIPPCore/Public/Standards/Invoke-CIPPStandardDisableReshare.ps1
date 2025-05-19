@@ -5,7 +5,7 @@ function Invoke-CIPPStandardDisableReshare {
     .COMPONENT
         (APIName) DisableReshare
     .SYNOPSIS
-        (Label) Disable Resharing by External Users
+        (Label) Disable Re-sharing by External Users
     .DESCRIPTION
         (Helptext) Disables the ability for external users to share files they don't own. Sharing links can only be made for People with existing access
         (DocsDescription) Disables the ability for external users to share files they don't own. Sharing links can only be made for People with existing access. This is a tenant wide setting and overrules any settings set on the site level
@@ -61,7 +61,8 @@ function Invoke-CIPPStandardDisableReshare {
     }
 
     if ($Settings.report -eq $true) {
-        Set-CIPPStandardsCompareField -FieldName 'standards.DisableReshare' -FieldValue $CurrentInfo.isResharingByExternalUsersEnabled -TenantFilter $Tenant
+        $state = $CurrentInfo.isResharingByExternalUsersEnabled ? ($CurrentInfo | Select-Object isResharingByExternalUsersEnabled) : $true
+        Set-CIPPStandardsCompareField -FieldName 'standards.DisableReshare' -FieldValue $state -TenantFilter $Tenant
         Add-CIPPBPAField -FieldName 'DisableReshare' -FieldValue $CurrentInfo.isResharingByExternalUsersEnabled -StoreAs bool -Tenant $tenant
     }
 }

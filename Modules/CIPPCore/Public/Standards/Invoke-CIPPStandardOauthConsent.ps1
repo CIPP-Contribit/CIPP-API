@@ -43,7 +43,7 @@ function Invoke-CIPPStandardOauthConsent {
                 $Existing = (New-GraphGetRequest -Uri 'https://graph.microsoft.com/beta/policies/permissionGrantPolicies/' -tenantid $tenant) | Where-Object -Property id -EQ 'cipp-consent-policy'
                 if (!$Existing) {
                     New-GraphPostRequest -tenantid $tenant -Uri 'https://graph.microsoft.com/beta/policies/permissionGrantPolicies' -Type POST -Body '{ "id":"cipp-consent-policy", "displayName":"Application Consent Policy", "description":"This policy controls the current application consent policies."}' -ContentType 'application/json'
-                    #Replaced static web app appid with Office 365 Management by Microsofts recommendation; this application is always consented, cannot be removed nor elevated as the portals run on this app id.
+                    #Replaced static web app appid with Office 365 Management by Microsoft's recommendation; this application is always consented, cannot be removed nor elevated as the portals run on this app id.
                     New-GraphPostRequest -tenantid $tenant -Uri 'https://graph.microsoft.com/beta/policies/permissionGrantPolicies/cipp-consent-policy/includes' -Type POST -Body '{"permissionClassification":"all","permissionType":"delegated","clientApplicationIds":["00b41c95-dab0-4487-9791-b9d2c32c80f2"]}' -ContentType 'application/json'
                 }
                 try {
@@ -69,7 +69,7 @@ function Invoke-CIPPStandardOauthConsent {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Application Consent Mode is enabled.' -sev Info
         } else {
-            Write-StandardsAlert -message 'Application Consent Mode is not enabled.' -object $State -tenant $tenant -standardName 'OauthConsent' -standardId $Settings.standardId
+            Write-StandardsAlert -message 'Application Consent Mode is not enabled.' -object ($State.defaultUserRolePermissions) -tenant $tenant -standardName 'OauthConsent' -standardId $Settings.standardId
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'Application Consent Mode is not enabled.' -sev Info
         }
     }
@@ -78,8 +78,9 @@ function Invoke-CIPPStandardOauthConsent {
         if ($StateIsCorrect) {
             $FieldValue = $true
         } else {
-            $FieldValue = $State
+            $FieldValue = $State | Select-Object -Property permissionGrantPolicyIdsAssignedToDefaultUserRole
         }
+
         Set-CIPPStandardsCompareField -FieldName 'standards.OauthConsent' -FieldValue $FieldValue -Tenant $tenant
     }
 }

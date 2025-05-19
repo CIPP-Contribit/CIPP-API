@@ -65,7 +65,7 @@ Function Invoke-CIPPStandardTeamsMessagingPolicy {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Global Teams Messaging policy already configured.' -sev Info
         } else {
-            $cmdparams = @{
+            $cmdParams = @{
                 Identity                                     = 'Global'
                 AllowOwnerDeleteMessage                      = $Settings.AllowOwnerDeleteMessage
                 AllowUserDeleteMessage                       = $Settings.AllowUserDeleteMessage
@@ -79,7 +79,7 @@ Function Invoke-CIPPStandardTeamsMessagingPolicy {
             }
 
             try {
-                New-TeamsRequest -TenantFilter $Tenant -Cmdlet 'Set-CsTeamsMessagingPolicy' -CmdParams $cmdparams
+                New-TeamsRequest -TenantFilter $Tenant -Cmdlet 'Set-CsTeamsMessagingPolicy' -CmdParams $cmdParams
                 Write-LogMessage -API 'Standards' -tenant $Tenant -message 'Updated global Teams messaging policy' -sev Info
             } catch {
                 $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
@@ -97,7 +97,7 @@ Function Invoke-CIPPStandardTeamsMessagingPolicy {
         }
     }
 
-    if ($Setings.report -eq $true) {
+    if ($Settings.report -eq $true) {
         Add-CIPPBPAField -FieldName 'TeamsMessagingPolicy' -FieldValue $StateIsCorrect -StoreAs bool -Tenant $Tenant
 
         if ($StateIsCorrect) {

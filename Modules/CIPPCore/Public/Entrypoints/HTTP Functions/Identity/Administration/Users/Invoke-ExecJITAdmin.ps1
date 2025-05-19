@@ -1,6 +1,6 @@
 using namespace System.Net
 
-Function Invoke-ExecJITAdmin {
+function Invoke-ExecJITAdmin {
     <#
     .FUNCTIONALITY
         Entrypoint
@@ -16,8 +16,7 @@ Function Invoke-ExecJITAdmin {
     Write-LogMessage -Headers $User -API $APINAME -message 'Accessed this API' -Sev 'Debug'
 
     if ($Request.Query.Action -eq 'List') {
-        $Schema = Get-CIPPSchemaExtensions | Where-Object { $_.id -match '_cippUser' }
-        #Write-Information "Schema: $($Schema)"
+        $Schema = Get-CIPPSchemaExtensions | Where-Object { $_.id -match '_cippUser' } | Select-Object -First 1
         $Query = @{
             TenantFilter = $Request.Query.TenantFilter
             Endpoint     = 'users'
@@ -122,11 +121,8 @@ Function Invoke-ExecJITAdmin {
                 $PasswordExpiration = $TapRequest.LifetimeInMinutes
 
                 $PasswordLink = New-PwPushLink -Payload $TempPass
-                if ($PasswordLink) {
-                    $Password = $PasswordLink
-                } else {
-                    $Password = $TempPass
-                }
+                $Password = $PasswordLink ? $PasswordLink : $TempPass
+
                 $Results.Add("Temporary Access Pass: $Password")
                 $Results.Add("This TAP is usable starting at $($TapRequest.startDateTime) UTC for the next $PasswordExpiration minutes")
             } catch {

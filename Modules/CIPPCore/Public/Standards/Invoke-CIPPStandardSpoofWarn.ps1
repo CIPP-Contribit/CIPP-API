@@ -16,6 +16,7 @@ function Invoke-CIPPStandardSpoofWarn {
             "CIS"
         ADDEDCOMPONENT
             {"type":"autoComplete","multiple":false,"label":"Select value","name":"standards.SpoofWarn.state","options":[{"label":"Enabled","value":"enabled"},{"label":"Disabled","value":"disabled"}]}
+            {"type":"autoComplete","multiple":true,"creatable":true,"required":false,"label":"Enter allowed senders(domain.com, *.domain.com or test@domain.com)","name":"standards.SpoofWarn.AllowListAdd"}
         IMPACT
             Low Impact
         ADDEDDATE
@@ -112,7 +113,7 @@ function Invoke-CIPPStandardSpoofWarn {
         if ($AllowListCorrect -eq $true -and $CurrentInfo.Enabled -eq $status) {
             $FieldValue = $true
         } else {
-            $FieldValue = $CurrentInfo
+            $FieldValue = $CurrentInfo | Select-Object Enabled, AllowList
         }
         Set-CIPPStandardsCompareField -FieldName 'standards.SpoofWarn' -FieldValue $FieldValue -Tenant $Tenant
     }
