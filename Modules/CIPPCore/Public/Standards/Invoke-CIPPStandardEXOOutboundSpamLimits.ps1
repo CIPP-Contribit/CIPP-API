@@ -31,10 +31,16 @@ function Invoke-CIPPStandardEXOOutboundSpamLimits {
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
-        https://docs.cipp.app/user-documentation/tenant/standards/list-standards/exchange-standards#low-impact
+        https://docs.cipp.app/user-documentation/tenant/standards/list-standards
     #>
 
     param($Tenant, $Settings)
+    $TestResult = Test-CIPPStandardLicense -StandardName 'EXOOutboundSpamLimits' -TenantFilter $Tenant -RequiredCapabilities @('EXCHANGE_S_STANDARD', 'EXCHANGE_S_ENTERPRISE', 'EXCHANGE_S_STANDARD_GOV', 'EXCHANGE_S_ENTERPRISE_GOV', 'EXCHANGE_LITE') #No Foundation because that does not allow powershell access
+
+    if ($TestResult -eq $false) {
+        Write-Host "We're exiting as the correct license is not present for this standard."
+        return $true
+    } #we're done.
 
     # Make sure it handles the frontend being both autocomplete and a text field
     $ActionWhenThresholdReached = $Settings.ActionWhenThresholdReached.value ?? $Settings.ActionWhenThresholdReached
@@ -62,7 +68,15 @@ function Invoke-CIPPStandardEXOOutboundSpamLimits {
     }
 
     # Get current settings
-    $CurrentInfo = New-ExoRequest -tenantid $Tenant -cmdlet 'Get-HostedOutboundSpamFilterPolicy' -cmdParams @{Identity = 'Default' } -Select 'RecipientLimitExternalPerHour, RecipientLimitInternalPerHour, RecipientLimitPerDay, ActionWhenThresholdReached' -useSystemMailbox $true | Select-Object -ExcludeProperty *data.type*
+    try {
+        $CurrentInfo = New-ExoRequest -tenantid $Tenant -cmdlet 'Get-HostedOutboundSpamFilterPolicy' -cmdParams @{Identity = 'Default' } -Select 'RecipientLimitExternalPerHour, RecipientLimitInternalPerHour, RecipientLimitPerDay, ActionWhenThresholdReached' -useSystemMailbox $true |
+        Select-Object -ExcludeProperty *data.type*
+    }
+    catch {
+        $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
+        Write-LogMessage -API 'Standards' -Tenant $Tenant -Message "Could not get the EXOOutboundSpamLimits state for $Tenant. Error: $ErrorMessage" -Sev Error
+        return
+    }
 
     # Check if settings are already correct
     $StateIsCorrect = ($CurrentInfo.RecipientLimitExternalPerHour -eq $Settings.RecipientLimitExternalPerHour) -and
