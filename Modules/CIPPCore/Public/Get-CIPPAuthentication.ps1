@@ -7,7 +7,7 @@ function Get-CIPPAuthentication {
     $Variables = @('ApplicationID', 'ApplicationSecret', 'TenantID', 'RefreshToken')
 
     try {
-        if ($env:AzureWebJobsStorage -eq 'UseDevelopmentStorage=true') {
+        if ($env:AzureWebJobsStorage -eq 'UseDevelopmentStorage=true' -or $env:NonLocalHostAzurite -eq 'true') {
             $Table = Get-CIPPTable -tablename 'DevSecrets'
             $Secret = Get-AzDataTableEntity @Table -Filter "PartitionKey eq 'Secret' and RowKey eq 'Secret'"
             if (!$Secret) {
@@ -20,14 +20,16 @@ function Get-CIPPAuthentication {
             }
             Write-Host "Got secrets from dev storage. ApplicationID: $env:ApplicationID"
             #Get list of tenants that have 'directTenant' set to true
-            $tenants = Get-Tenants | Where-Object -Property delegatedPrivilegeStatus -EQ 'directTenant'
+            #get directtenants directly from table, avoid get-tenants due to performance issues
+            $TenantsTable = Get-CippTable -tablename 'Tenants'
+            $Filter = "PartitionKey eq 'Tenants' and delegatedPrivilegeStatus eq 'directTenant'"
+            $tenants = Get-CIPPAzDataTableEntity @TenantsTable -Filter $Filter
             if ($tenants) {
-                Write-Host "Found $($tenants.Count) tenants with directTenant set to true"
                 $tenants | ForEach-Object {
-                    $name = $_.customerId -replace '-', '_'
-                    if ($secret.$name) {
+                    $secretname = $_.customerId -replace '-', '_'
+                    if ($secret.$secretname) {
                         $name = $_.customerId
-                        Set-Item -Path env:$name -Value $secret.$name -Force
+                        Set-Item -Path env:$name -Value $secret.$secretname -Force
                     }
                 }
             }
@@ -50,14 +52,14 @@ function Get-CIPPAuthentication {
 
             $keyvaultname = ($env:WEBSITE_DEPLOYMENT_ID -split '-')[0]
             #Get list of tenants that have 'directTenant' set to true
-            $tenants = Get-Tenants | Where-Object -Property delegatedPrivilegeStatus -EQ 'directTenant'
+            $TenantsTable = Get-CippTable -tablename 'Tenants'
+            $Filter = "PartitionKey eq 'Tenants' and delegatedPrivilegeStatus eq 'directTenant'"
+            $tenants = Get-CIPPAzDataTableEntity @TenantsTable -Filter $Filter
             if ($tenants) {
                 $tenants | ForEach-Object {
-                    $name = $_.tenantId -replace '-', '_'
+                    $name = $_.customerId
                     $secret = Get-AzKeyVaultSecret -VaultName $keyvaultname -Name $name -AsPlainText -ErrorAction Stop
                     if ($secret) {
-                        #set the name back to the original tenantId
-                        $name = $_.customerId
                         Set-Item -Path env:$name -Value $secret -Force
                     }
                 }
