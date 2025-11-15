@@ -41,8 +41,30 @@ function Import-CommunityTemplate {
                     $excludedTenants = $ExistingJSON.excludedTenants
                     $NewJSON.tenantFilter = $tenantFilter
                     $NewJSON.excludedTenants = $excludedTenants
+
+                    # Extract package tag from existing template
+                    $PackageTag = $Existing.Package
+                    if ($PackageTag) {
+                        $Template | Add-Member -MemberType NoteProperty -Name Package -Value $PackageTag -Force
+                    }
                 }
             }
+
+            if ($Template.PartitionKey -eq 'AppApprovalTemplate') {
+                # Extract the Permission Set name,id,permissions from the JSON and add to the AppPermissions table
+                $AppPermissionsTable = Get-CIPPTable -TableName 'AppPermissions'
+                $Permissions = $NewJSON.Permissions
+                $Entity = @{
+                    'PartitionKey' = 'Templates'
+                    'RowKey'       = $NewJSON.PermissionSetId
+                    'TemplateName' = $NewJSON.PermissionSetName
+                    'Permissions'  = [string]($Permissions | ConvertTo-Json -Depth 10 -Compress)
+                    'UpdatedBy'    = $NewJSON.UpdatedBy ?? $NewJSON.CreatedBy ?? 'System'
+                }
+                $null = Add-CIPPAzDataTableEntity @AppPermissionsTable -Entity $Entity -Force
+                Write-Information 'Added App Permissions to AppPermissions table'
+            }
+
             # Re-compress JSON and save to table
             $NewJSON = [string]($NewJSON | ConvertTo-Json -Depth 100 -Compress)
             $Template.JSON = $NewJSON
