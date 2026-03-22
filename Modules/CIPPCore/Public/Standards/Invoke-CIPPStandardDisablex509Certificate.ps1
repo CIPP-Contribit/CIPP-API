@@ -13,6 +13,8 @@ function Invoke-CIPPStandardDisablex509Certificate {
         CAT
             Entra (AAD) Standards
         TAG
+        EXECUTIVETEXT
+            Disables certificate-based authentication as a multi-factor authentication method, typically used when organizations want to standardize on other authentication methods or when certificate management becomes too complex for the security benefit provided.
         ADDEDCOMPONENT
         IMPACT
             High Impact
@@ -24,16 +26,21 @@ function Invoke-CIPPStandardDisablex509Certificate {
         UPDATECOMMENTBLOCK
             Run the Tools\Update-StandardsComments.ps1 script to update this comment block
     .LINK
-        https://docs.cipp.app/user-documentation/tenant/standards/list-standards/entra-aad-standards#high-impact
+        https://docs.cipp.app/user-documentation/tenant/standards/list-standards
     #>
 
     param($Tenant, $Settings)
-    ##$Rerun -Type Standard -Tenant $Tenant -Settings $Settings 'Disablex509Certificate'
 
-    $CurrentState = New-GraphGetRequest -Uri 'https://graph.microsoft.com/beta/policies/authenticationmethodspolicy/authenticationMethodConfigurations/x509Certificate' -tenantid $Tenant
+    try {
+        $CurrentState = New-GraphGetRequest -Uri 'https://graph.microsoft.com/beta/policies/authenticationmethodspolicy/authenticationMethodConfigurations/x509Certificate' -tenantid $Tenant
+    } catch {
+        $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
+        Write-LogMessage -API 'Standards' -Tenant $Tenant -Message "Could not get the Disablex509Certificate state for $Tenant. Error: $ErrorMessage" -Sev Error
+        return
+    }
     $StateIsCorrect = ($CurrentState.state -eq 'disabled')
 
-    If ($Settings.remediate -eq $true) {
+    if ($Settings.remediate -eq $true) {
         if ($StateIsCorrect -eq $true) {
             Write-LogMessage -API 'Standards' -tenant $tenant -message 'x509Certificate authentication method is already disabled.' -sev Info
         } else {
@@ -54,8 +61,14 @@ function Invoke-CIPPStandardDisablex509Certificate {
     }
 
     if ($Settings.report -eq $true) {
-        $state = $StateIsCorrect ? $true : $CurrentState
-        Set-CIPPStandardsCompareField -FieldName 'standards.Disablex509Certificate' -FieldValue $state -TenantFilter $Tenant
+        $CurrentValue = [PSCustomObject]@{
+            Disablex509Certificate = $StateIsCorrect
+        }
+        $ExpectedValue = [PSCustomObject]@{
+            Disablex509Certificate = $true
+        }
+
+        Set-CIPPStandardsCompareField -FieldName 'standards.Disablex509Certificate' -CurrentValue $CurrentValue -ExpectedValue $ExpectedValue -TenantFilter $Tenant
         Add-CIPPBPAField -FieldName 'Disablex509Certificate' -FieldValue $StateIsCorrect -StoreAs bool -Tenant $tenant
     }
 
