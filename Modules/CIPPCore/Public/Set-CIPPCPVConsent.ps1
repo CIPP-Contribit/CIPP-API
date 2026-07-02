@@ -17,6 +17,21 @@ function Set-CIPPCPVConsent {
     if ($Tenant.customerId -ne $TenantFilter) {
         return @('Not a valid tenant')
     }
+    if ($Tenant.delegatedPrivilegeStatus -eq 'directTenant') {
+        return @('Application is already consented to this tenant')
+    }
+
+    # Skip the Partner Center POST if consent was applied recently and we're not resetting
+    if (-not $ResetSP) {
+        $CpvTable = Get-CIPPTable -TableName cpvtenants
+        $ExistingRow = Get-CIPPAzDataTableEntity @CpvTable -Filter "PartitionKey eq 'Tenant' and RowKey eq '$TenantFilter'"
+        if ($ExistingRow -and $ExistingRow.applicationId -eq $env:ApplicationID -and $ExistingRow.LastApply) {
+            $UnixNow = [int64](([datetime]::UtcNow) - (Get-Date '1/1/1970')).TotalSeconds
+            if (($UnixNow - [int64]$ExistingRow.LastApply) -lt 86400) {
+                return @("CPV consent for $TenantName is current, skipping re-consent")
+            }
+        }
+    }
 
     if ($ResetSP) {
         try {
@@ -40,7 +55,7 @@ function Set-CIPPCPVConsent {
                         'DelegatedPermissionGrant.ReadWrite.All',
                         'Directory.ReadWrite.All',
                         'AppRoleAssignment.ReadWrite.All'
-                    ) -Join ','
+                    ) -join ','
                 }
             )
         } | ConvertTo-Json
