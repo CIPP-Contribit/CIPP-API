@@ -3,7 +3,7 @@ function Write-LogMessage {
     .FUNCTIONALITY
     Internal
     #>
-    Param(
+    param(
         $message,
         $tenant = 'None',
         $API = 'None',
@@ -44,14 +44,16 @@ function Write-LogMessage {
     if ($sev -eq 'Debug' -and $env:DebugMode -ne $true) {
         return
     }
-    $PartitionKey = (Get-Date -UFormat '%Y%m%d').ToString()
+    $TzId = if ($env:CIPP_TIMEZONE) { $env:CIPP_TIMEZONE } else { 'UTC' }
+    $LocalNow = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, $TzId)
+    $PartitionKey = $LocalNow.ToString('yyyyMMdd')
     $TableRow = @{
         'Tenant'       = [string]$tenant
         'API'          = [string]$API
         'Message'      = [string]$message
         'Username'     = [string]$username
         'Severity'     = [string]$sev
-        'SentAsAlert'  = $false
+        'sentAsAlert'  = $false
         'PartitionKey' = [string]$PartitionKey
         'RowKey'       = [string]([guid]::NewGuid()).ToString()
         'FunctionNode' = [string]$env:WEBSITE_SITE_NAME
@@ -65,6 +67,20 @@ function Write-LogMessage {
     }
     if ($tenantId) {
         $TableRow.Add('TenantID', [string]$tenantId)
+    }
+    $StandardInfo = $script:CippStandardInfoStorage.Value
+    if ($StandardInfo) {
+        $TableRow.Standard = [string]$StandardInfo.Standard
+        $TableRow.StandardTemplateId = [string]$StandardInfo.StandardTemplateId
+        if ($StandardInfo.IntuneTemplateId) {
+            $TableRow.IntuneTemplateId = [string]$StandardInfo.IntuneTemplateId
+        }
+        if ($StandardInfo.ConditionalAccessTemplateId) {
+            $TableRow.ConditionalAccessTemplateId = [string]$StandardInfo.ConditionalAccessTemplateId
+        }
+    }
+    if ($script:CippScheduledTaskIdStorage.Value) {
+        $TableRow.ScheduledTaskId = [string]$script:CippScheduledTaskIdStorage.Value
     }
 
     $Table.Entity = $TableRow
