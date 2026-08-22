@@ -17,12 +17,17 @@ function Set-CIPPCPVConsent {
     if ($Tenant.customerId -ne $TenantFilter) {
         return @('Not a valid tenant')
     }
+    if ($Tenant.delegatedPrivilegeStatus -eq 'directTenant') {
+        return @('Application is already consented to this tenant')
+    }
 
     if ($ResetSP) {
         try {
             if ($PSCmdlet.ShouldProcess($env:ApplicationID, "Delete Service Principal from $TenantName")) {
                 $null = New-GraphPostRequest -Type DELETE -noauthcheck $true -uri "https://api.partnercenter.microsoft.com/v1/customers/$($TenantFilter)/applicationconsents/$($env:ApplicationID)" -scope 'https://api.partnercenter.microsoft.com/.default' -tenantid $env:TenantID
             }
+            # The SP is gone, so any cached token for this tenant is now invalid.
+            $null = Clear-CippTokenCache -TenantFilter $TenantFilter
             $Results.add("Deleted Service Principal from $TenantName")
         } catch {
             $ErrorMessage = Get-NormalizedError -Message $_.Exception.Message
@@ -40,7 +45,7 @@ function Set-CIPPCPVConsent {
                         'DelegatedPermissionGrant.ReadWrite.All',
                         'Directory.ReadWrite.All',
                         'AppRoleAssignment.ReadWrite.All'
-                    ) -Join ','
+                    ) -join ','
                 }
             )
         } | ConvertTo-Json
@@ -58,6 +63,9 @@ function Set-CIPPCPVConsent {
             }
             Add-CIPPAzDataTableEntity @Table -Entity $GraphRequest -Force
         }
+        # Consent just changed; drop cached tokens so the next call picks up the new scopes
+        # instead of reusing one issued before this grant.
+        $null = Clear-CippTokenCache -TenantFilter $TenantFilter
         $Results.add("Successfully added CPV Application to tenant $($TenantName)") | Out-Null
         Write-LogMessage -Headers $User -API $APINAME -message "Added our Service Principal to $($TenantName)" -Sev 'Info' -tenant $Tenant.defaultDomainName -tenantId $TenantFilter
     } catch {
