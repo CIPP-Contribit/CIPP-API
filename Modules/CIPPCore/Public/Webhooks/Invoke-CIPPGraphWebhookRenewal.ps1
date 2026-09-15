@@ -4,6 +4,8 @@ function Invoke-CippGraphWebhookRenewal {
         'expirationDateTime' = "$RenewalDate"
     } | ConvertTo-Json
 
+    $Tenants = Get-Tenants -IncludeErrors
+
     $WebhookTable = Get-CIPPTable -TableName webhookTable
     try {
         $WebhookData = Get-AzDataTableEntity @WebhookTable | Where-Object { $null -ne $_.SubscriptionID -and $_.SubscriptionID -ne '' -and ((Get-Date($_.Expiration)) -le ((Get-Date).AddHours(2))) }
@@ -12,9 +14,16 @@ function Invoke-CippGraphWebhookRenewal {
     }
 
     if (($WebhookData | Measure-Object).Count -gt 0) {
+        Write-LogMessage -API 'Scheduler_RenewGraphSubscriptions' -tenant 'none' -message 'Starting Graph Subscription Renewal' -sev Info
         foreach ($UpdateSub in $WebhookData) {
             try {
                 $TenantFilter = $UpdateSub.PartitionKey
+                if ($Tenants.defaultDomainName -notcontains $TenantFilter -and $Tenants.customerId -notcontains $TenantFilter) {
+                    Write-LogMessage -API 'Renew_Graph_Subscriptions' -message "Removing Subscription Renewal for $($UpdateSub.SubscriptionID) as tenant $TenantFilter is not in the tenant list." -sev 'Warning' -tenant $TenantFilter
+                    Remove-CIPPAzDataTableEntity -Force @WebhookTable -Entity $UpdateSub
+                    continue
+                }
+
                 try {
                     $null = New-GraphPostRequest -uri "https://graph.microsoft.com/beta/subscriptions/$($UpdateSub.SubscriptionID)" -tenantid $TenantFilter -type PATCH -body $body -Verbose
                     $UpdateSub.Expiration = $RenewalDate
@@ -36,7 +45,7 @@ function Invoke-CippGraphWebhookRenewal {
                     $CreateResult = New-CIPPGraphSubscription -TenantFilter $TenantFilter -TypeofSubscription $TypeofSubscription -BaseURL $BaseURL -Resource $Resource -EventType $EventType -Headers 'GraphSubscriptionRenewal' -Recreate
 
                     if ($CreateResult -match 'Created Webhook subscription for') {
-                        Remove-AzDataTableEntity -Force @WebhookTable -Entity $UpdateSub
+                        Remove-CIPPAzDataTableEntity -Force @WebhookTable -Entity $UpdateSub
                     }
                 }
             } catch {
